@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pruebas Chatbot Backend</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .result {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 10px;
+            border-left: 4px solid #007bff;
+            white-space: pre-wrap;
+            font-family: monospace;
+        }
+        input, textarea {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        textarea {
+            height: 60px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🤖 Pruebas del Chatbot Backend</h1>
+    
+    <div class="container">
+        <h3>📊 Estado del Servidor</h3>
+        <button onclick="testHalt()">Verificar Estado</button>
+        <div id="haltResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>📚 Documentación</h3>
+        <button onclick="testDoc()">Obtener Documentación</button>
+        <div id="docResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>💬 Enviar Mensaje al Chatbot</h3>
+        <input type="text" id="messageInput" placeholder="Escribe tu mensaje aquí..." value="Hola, ¿cómo estás?">
+        <button onclick="sendMessage()">Enviar Mensaje Normal</button>
+        <button onclick="sendEventOne()">Enviar como Evento Uno</button>
+        <button onclick="sendEventTwo()">Enviar como Evento Dos</button>
+        <div id="messageResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>🧠 Gestión de Contexto</h3>
+        <input type="text" id="userIdInput" placeholder="ID de usuario" value="lucia123">
+        <textarea id="contextInput" placeholder='{"name":"Lucia","course":"Backend Development"}'></textarea>
+        <button onclick="setContext()">Establecer Contexto</button>
+        <button onclick="getContext()">Obtener Contexto</button>
+        <div id="contextResult" class="result"></div>
+    </div>
+
+    <div class="container">
+        <h3>📋 Historial</h3>
+        <button onclick="getHistory()">Obtener Historial</button>
+        <div id="historyResult" class="result"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:3001/api';
+
+        async function makeRequest(url, options = {}) {
+            try {
+                const response = await fetch(url, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                return {
+                    status: response.status,
+                    data: data
+                };
+            } catch (error) {
+                return {
+                    error: error.message
+                };
+            }
+        }
+
+        function displayResult(elementId, result) {
+            const element = document.getElementById(elementId);
+            element.textContent = JSON.stringify(result, null, 2);
+        }
+
+        async function testHalt() {
+            const result = await makeRequest(`${API_BASE}/halt`);
+            displayResult('haltResult', result);
+        }
+
+        async function testDoc() {
+            const result = await makeRequest(`${API_BASE}/doc`);
+            displayResult('docResult', result);
+        }
+
+        async function sendMessage() {
+            const message = document.getElementById('messageInput').value;
+            const result = await makeRequest(`${API_BASE}/chat/mensajes`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    message: message,
+                    context: { test: true, user: 'demo' }
+                })
+            });
+            displayResult('messageResult', result);
+        }
+
+        async function sendEventOne() {
+            const message = document.getElementById('messageInput').value;
+            const result = await makeRequest(`${API_BASE}/chat/mensajes`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    message: message,
+                    eventType: 'evento_uno',
+                    context: { event: 'primera información', user: 'demo' }
+                })
+            });
+            displayResult('messageResult', result);
+        }
+
+        async function sendEventTwo() {
+            const message = document.getElementById('messageInput').value;
+            const result = await makeRequest(`${API_BASE}/chat/mensajes`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    message: message,
+                    eventType: 'evento_dos',
+                    context: { event: 'segunda información', user: 'demo' }
+                })
+            });
+            displayResult('messageResult', result);
+        }
+
+        async function setContext() {
+            const userId = document.getElementById('userIdInput').value;
+            const contextText = document.getElementById('contextInput').value;
+            
+            let context;
+            try {
+                context = contextText ? JSON.parse(contextText) : { name: 'Usuario Demo', preferences: ['tech', 'ai'] };
+            } catch (e) {
+                context = { name: 'Usuario Demo', preferences: ['tech', 'ai'] };
+            }
+
+            const result = await makeRequest(`${API_BASE}/context/context`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    userId: userId,
+                    context: context,
+                    sessionId: 'demo_session'
+                })
+            });
+            displayResult('contextResult', result);
+        }
+
+        async function getContext() {
+            const userId = document.getElementById('userIdInput').value;
+            const result = await makeRequest(`${API_BASE}/context/context/${userId}`);
+            displayResult('contextResult', result);
+        }
+
+        async function getHistory() {
+            const result = await makeRequest(`${API_BASE}/chat/mensajes/historial`);
+            displayResult('historyResult', result);
+        }
+
+        // Llenar datos de ejemplo al cargar
+        document.getElementById('contextInput').value = JSON.stringify({
+            name: "Lucia",
+            course: "Backend Development",
+            preferences: ["Node.js", "API", "Chatbots"],
+            level: "intermediate"
+        }, null, 2);
+    </script>
+</body>
+</html>
