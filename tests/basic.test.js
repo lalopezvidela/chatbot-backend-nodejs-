@@ -3,7 +3,7 @@
 
 const axios = require('axios');
 
-const BASE_URL = 'http://localhost:3001';
+const BASE_URL = 'http://localhost:3002';
 
 async function runTests() {
   console.log('🧪 Iniciando pruebas básicas del backend...\n');
