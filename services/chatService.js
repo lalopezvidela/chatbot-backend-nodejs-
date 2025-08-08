@@ -6,7 +6,7 @@ class ChatService {
     this.llmConfig = {
       baseURL: process.env.LLM_BASE_URL || 'https://generativelanguage.googleapis.com/v1beta',
       apiKey: process.env.GEMINI_API_KEY || '',
-      model: process.env.LLM_MODEL || 'gemini-pro'
+      model: process.env.LLM_MODEL || 'gemini-2.5-flash'
     };
   }
 
