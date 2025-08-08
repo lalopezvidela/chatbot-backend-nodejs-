@@ -29,7 +29,7 @@ class ChatService {
           }],
           generationConfig: {
             temperature: 0.7,
-            maxOutputTokens: 150,
+            maxOutputTokens: 4096,
             topP: 0.8,
             topK: 10
           }
@@ -42,13 +42,40 @@ class ChatService {
         }
       );
 
+      // Depuración: mostrar la respuesta completa de Gemini
+      console.log('Respuesta completa de Gemini:', JSON.stringify(response.data, null, 2));
+      
+      // Verificar si hay errores en la respuesta
+      if (response.data && response.data.error) {
+        console.error('Error de la API de Gemini:', response.data.error);
+        return this.getFallbackResponse();
+      }
+      
       // Procesar respuesta del modelo Gemini
-      if (response.data && response.data.candidates && response.data.candidates[0] && 
-          response.data.candidates[0].content && response.data.candidates[0].content.parts[0]) {
-        return this.cleanResponse(response.data.candidates[0].content.parts[0].text);
+      if (response.data && response.data.candidates && response.data.candidates[0]) {
+        const candidate = response.data.candidates[0];
+        
+        // Verificar si hay contenido con parts
+        if (candidate.content && candidate.content.parts && candidate.content.parts[0] && candidate.content.parts[0].text) {
+          return this.cleanResponse(candidate.content.parts[0].text);
+        }
+        
+        // Verificar razón de finalización
+        if (candidate.finishReason) {
+          console.warn(`Gemini terminó con razón: ${candidate.finishReason}`);
+          if (candidate.finishReason === 'MAX_TOKENS') {
+            console.warn('El modelo alcanzó el límite de tokens. Aumentando maxOutputTokens...');
+          }
+        }
+      }
+
+      // Si hay texto directamente en la respuesta (formato alternativo)
+      if (response.data && response.data.text) {
+        return this.cleanResponse(response.data.text);
       }
 
       // Fallback si no hay respuesta del modelo
+      console.warn('No se encontró texto en la respuesta de Gemini, usando fallback');
       return this.getFallbackResponse();
 
     } catch (error) {
